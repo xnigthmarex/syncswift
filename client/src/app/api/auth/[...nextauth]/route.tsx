@@ -1,10 +1,16 @@
+import NextAuth, { NextAuthOptions } from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import GoogleProvider from 'next-auth/providers/google';
+import { authenticateUser } from './serverActions';
 
-import NextAuth, { type NextAuthOptions } from 'next-auth'
-import CredentialsProvider from 'next-auth/providers/credentials'
+// Ensure environment variables are set
+if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+  throw new Error('OAuth environment variables are not set.');
+}
 
 export const authOptions: NextAuthOptions = {
   session: {
-    strategy: 'jwt'
+    strategy: 'jwt',
   },
   providers: [
     CredentialsProvider({
@@ -13,48 +19,44 @@ export const authOptions: NextAuthOptions = {
         email: {
           label: 'Email',
           type: 'email',
-          placeholder: 'hello@example.com'
+          placeholder: 'hello@example.com',
         },
-        password: { label: 'Password', type: 'password' }
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-       
-
-        return {
-          id: "1" + '',
-          email: "aryan@lol.com",
-          name: "noob",
-          randomKey: 'Hey cool'
+        if (!credentials || !credentials.email || !credentials.password) {
+          return null;
         }
-      }
-    })
+        const user = await authenticateUser(credentials.email, credentials.password);
+        return user;
+      },
+    }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+    }),
   ],
   callbacks: {
     session: ({ session, token }) => {
-      console.log('Session Callback', { session, token })
       return {
         ...session,
         user: {
           ...session.user,
           id: token.id,
-          randomKey: token.randomKey
-        }
-      }
+        },
+      };
     },
     jwt: ({ token, user }) => {
-      console.log('JWT Callback', { token, user })
       if (user) {
-        const u = user as unknown as any
         return {
           ...token,
-          id: u.id,
-          randomKey: u.randomKey
-        }
+          id: user.id,
+        };
       }
-      return token
-    }
-  }
-}
+      return token;
+    },
+  },
+};
 
-const handler = NextAuth(authOptions)
-export { handler as GET, handler as POST }
+const handler = NextAuth(authOptions);
+export { handler as GET, handler as POST };
