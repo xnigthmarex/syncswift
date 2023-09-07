@@ -1,8 +1,7 @@
 "use server"
-import { PrismaClient } from '@prisma/client';
+import  prisma  from '@/lib/prisma';
 import bcrypt from 'bcrypt';
 
-const prisma = new PrismaClient();
 
 export const createUser = async (username: string, email: string, password: string | Buffer) => {
   // Hash the password

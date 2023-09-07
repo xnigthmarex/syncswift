@@ -3,6 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import { authenticateUser } from './serverActions';
 
+
 // Ensure environment variables are set
 if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
   throw new Error('OAuth environment variables are not set.');
@@ -24,11 +25,19 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
+        console.log(credentials)
         if (!credentials || !credentials.email || !credentials.password) {
           return null;
         }
+        console.log(credentials)
         const user = await authenticateUser(credentials.email, credentials.password);
-        return user;
+        if (user){
+          return {
+            ...user,
+            id: String(user.id), // Convert to string
+          };
+        }
+        return null;
       },
     }),
     GoogleProvider({
@@ -55,6 +64,9 @@ export const authOptions: NextAuthOptions = {
       }
       return token;
     },
+  },
+  pages: {
+    signIn: '/auth/signin',
   },
 };
 
